@@ -13,10 +13,19 @@
             background-color: #f0f4f8; /* Softer background color */
             background-image: linear-gradient(to bottom right, #f3f4f6, #e5e7eb);
         }
+        /* Mengubah tinggi container agar pas untuk doughnut chart */
         .chart-container {
             position: relative;
-            height: 60vh; /* Adjusted for better visibility */
+            height: 45vh; /* Dibuat lebih pendek, ideal untuk pie/doughnut */
             width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        /* Memastikan chart-nya tidak terlalu besar di dalam container */
+        #monitoringChart {
+             max-height: 100%;
+             max-width: 100%;
         }
         .card {
             transition: all 0.3s ease-in-out;
@@ -96,13 +105,17 @@
 
             <!-- Kolom Dashboard & Grafik -->
             <div class="lg:col-span-2 card bg-white p-6 rounded-2xl shadow-xl">
-                <h2 class="text-2xl font-semibold mb-6 text-gray-700 border-b pb-3">Dashboard Monitoring</h2>
-                <p class="text-sm text-gray-500 mb-4">Grafik ini menunjukkan persentase kelengkapan dokumen yang telah dikirim oleh masing-masing guru.</p>
+                <h2 class="text-2xl font-semibold mb-6 text-gray-700 border-b pb-3">Dashboard Monitoring (Global)</h2>
+                <p class="text-sm text-gray-500 mb-4">Grafik ini menunjukkan rekapitulasi global guru yang sudah lengkap dan belum.</p>
+                
+                <!-- Container untuk Pie Chart -->
                 <div class="chart-container">
-                    <canvas id="submissionChart"></canvas>
+                    <canvas id="monitoringChart"></canvas>
                 </div>
+                
                  <div class="mt-8">
                     <h3 class="text-xl font-semibold mb-4 text-gray-700">Detail Status Pengumpulan</h3>
+                    <p class="text-sm text-gray-500 mb-4">Tabel ini menunjukkan progres kelengkapan dokumen per individu guru.</p>
                     <div class="max-h-[300px] overflow-y-auto border border-gray-200 rounded-lg">
                          <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50 table-header-sticky">
@@ -112,7 +125,7 @@
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kelengkapan</th>
                                 </tr>
                             </thead>
-                            <tbody id="statusTable" class="bg-white divide-y divide-gray-200">
+                            <tbody id="detailTableBody" class="bg-white divide-y divide-gray-200">
                                 <!-- Data status akan di-generate oleh JavaScript -->
                             </tbody>
                         </table>
@@ -129,7 +142,7 @@
 
 <script>
     // --- KONFIGURASI PENTING ---
-    const SPREADSHEET_URL = 'https://script.google.com/macros/s/AKfycbxdb8Sb4ZjNzs9Y8BnhPCUQUhUANVd0aDPCmNdc708BOJI8UmAID7eqltE9jDP_pWJf/exec';
+    const SPREADSHEET_URL = 'https://script.google.com/macros/s/AKfycbxZODYrUi4tq6EdA-V6XNACUP1gdDdwMIk1J3ULR90Pw9U6nI96BQj73z63chIghGWm/exec';
 
     // --- DATA GURU & DOKUMEN ---
     const teachersData = [
@@ -143,7 +156,9 @@
         { name: 'Nur Romlah, S.Pd', nip: '197509082008012008' }, { name: 'Deddy Suwito, S.Kom', nip: '197209022006041013' },
         { name: 'Agus Wuryanto, S.Pd', nip: '197503222006041002' }, { name: 'Tri Puji Utami, S.Kom', nip: '198304252009032009' },
         { name: 'Puji Pertiwi Sayekti, S.Pd', nip: '196805102005012011' }, { name: 'Nur Fajriyahti, S.Pd.', nip: '197005212007012014' },
-        { name: 'Srirahayu, S.Pd.', nip: '197408042008012009' }, { name: 'Romidin, S.Pd', nip: '197505052008011021' },
+        { name: 'Srirahayu, S.Pd.', nip: '197408042008012009' }, 
+        // INI ADALAH PERBAIKANNYA: NIP Pak Romidin sudah benar
+        { name: 'Romidin, S.Pd', nip: '197505052008011021' },
         { name: 'Teguh Cahyono, S.Pd.', nip: '198110232006041010' }, { name: 'Seto Eko Purwanto, S.Si', nip: '197804232010011009' },
         { name: 'Nelly Amaliyah, S.Psi', nip: '197907032010012019' }, { name: 'Satyo Nugroho, S.Kom.', nip: '197807142009031006' },
         { name: 'Suratno, S.Pd', nip: '198409032010011012' }, { name: 'Vektor Realita Aditopo, S.Pd', nip: '198603312011011003' },
@@ -169,32 +184,23 @@
         { name: 'Agus Sutono, S.Pd.', nip: '197406182025211007' }, { name: 'Yanti Karadina, S.Pd.', nip: '197512172025212006' },
         { name: 'Widia Sukaesih, S.E.', nip: '197810082025212008' }, { name: 'Triyanto, S.Pd.', nip: '198411252025211021' },
         { name: 'Inayatul Munawaroh, S.Pd.', nip: '199301062025212023' }, { name: 'Danu Setio Aji, S.Pd.', nip: '199310162025211021' },
-        { name: 'Hera Dwi Suryandari, S.Pd.', nip: '199312262025212012' }, { name: 'Slamet Suparman, S.Pd.', nip: '-' },
-        { name: 'Devi Dwi Wahyuni, S.Pd.', nip: '-' }, { name: 'Muhammad Idris Afandi, S.S., M.Pd.', nip: '-' },
+        { name: 'Hera Dwi Suryandari, S.Pd.', nip: '199312262025212012' }, { name: 'Slamet Suparmanto, S.Pd.', nip: '-' },
+        { name: "Devi Dwi Wahyuni, S.Pd.", nip: '-' }, { name: 'Muhammad Idris Afandi, S.S., M.Pd.', nip: '-' },
         { name: 'Rindhi Rezqi Hertindha, M.Pd.', nip: '-' }, { name: 'Seli Fadriyah, S.Pd.', nip: '-' },
         { name: 'Nurhidayah, S.S., M.Pd.', nip: '-' }, { name: 'Prana Prakasita, S.Pd.', nip: '-' },
         { name: 'Rita Puspitasari, S.Pd.', nip: '-' }, { name: 'Ullil Hykmah, S.Pd.', nip: '-' }
     ].sort((a, b) => a.name.localeCompare(b.name));
 
-    const documents = [
+    const DOC_NAMES = [
         "Capaian Pembelajaran", "Alur Tujuan Pembelajaran", "Tujuan Pembelajaran",
         "Program Tahunan", "Program Semester", "Analisis Minggu Efektif",
         "KKTP", "Kaldik", "RPM/Modul Ajar", "Daftar Nilai, Soal dan Analisis"
     ];
 
-    let submissionChart;
-    let chartData = {};
+    let myMonitoringChart;
+    let allTeacherData = {}; // Menyimpan data lengkap per guru
 
     // --- FUNGSI-FUNGSI ---
-    function generateColorPalette(numColors) {
-        const colors = [];
-        const hueStep = 360 / numColors;
-        for (let i = 0; i < numColors; i++) {
-            const hue = (210 + i * hueStep) % 360;
-            colors.push(`hsla(${hue}, 75%, 60%, 0.85)`);
-        }
-        return colors;
-    }
 
     function showNotification(message, isError = false) {
         const notification = document.getElementById('notification');
@@ -208,31 +214,48 @@
         }, 3000);
     }
 
+    // Fungsi untuk mengupdate DASHBOARD (Pie Chart dan Tabel)
     function updateDashboard() {
-        const sortedTeachers = Object.keys(chartData).sort((a, b) => a.localeCompare(b));
-        
-        const labels = sortedTeachers;
-        const data = sortedTeachers.map(name => chartData[name].percentage);
-        const colors = sortedTeachers.map(name => chartData[name].color);
-        
-        submissionChart.data.labels = labels;
-        submissionChart.data.datasets[0].data = data;
-        submissionChart.data.datasets[0].backgroundColor = colors;
-        submissionChart.data.datasets[0].borderColor = colors.map(c => c.replace('0.85', '1'));
-        submissionChart.update();
+        if (!myMonitoringChart) return; // Jangan update jika chart belum dibuat
 
-        const tableBody = document.getElementById('statusTable');
-        tableBody.innerHTML = '';
-        labels.forEach((name, index) => {
-            const teacherProgress = chartData[name];
-            const percentage = teacherProgress.percentage.toFixed(0);
-            const statusClass = percentage == 100 ? 'bg-teal-100 text-teal-800' : 'bg-amber-100 text-amber-800';
-            const statusText = percentage == 100 ? 'Lengkap' : 'Belum Lengkap';
+        let completeCount = 0;
+        let incompleteCount = 0;
+        const totalTeachers = teachersData.length;
+        const tableBody = document.getElementById('detailTableBody');
+        tableBody.innerHTML = ''; // Kosongkan tabel detail
+
+        // Urutkan nama guru untuk tabel
+        const sortedTeacherNames = Object.keys(allTeacherData).sort((a, b) => a.localeCompare(b));
+
+        sortedTeacherNames.forEach((teacherName, index) => {
+            const teacher = allTeacherData[teacherName];
+            const totalDocs = DOC_NAMES.length;
+            let submittedCount = 0;
+
+            DOC_NAMES.forEach(docName => {
+                if (teacher[docName] && teacher[docName].trim() !== '') {
+                    submittedCount++;
+                }
+            });
+
+            const percentage = (submittedCount / totalDocs) * 100;
+            const isComplete = submittedCount === totalDocs;
+
+            if (isComplete) {
+                completeCount++;
+            } else {
+                incompleteCount++;
+            }
+            
+            // Update Tabel Detail
+            const statusClass = isComplete ? 'bg-teal-100 text-teal-800' : 'bg-amber-100 text-amber-800';
+            const statusText = isComplete ? 'Lengkap' : 'Belum Lengkap';
             const rowClass = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+            const color = isComplete ? 'rgba(75, 192, 192, 0.8)' : 'rgba(255, 206, 86, 0.8)';
 
             const row = `
                 <tr class="${rowClass}">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${teacherName}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
                             ${statusText}
@@ -241,28 +264,33 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div class="flex items-center">
                             <div class="w-full bg-gray-200 rounded-full h-2.5">
-                                <div class="h-2.5 rounded-full" style="width: ${percentage}%; background-color: ${teacherProgress.color};"></div>
+                                <div class="h-2.5 rounded-full" style="width: ${percentage}%; background-color: ${color};"></div>
                             </div>
-                            <span class="ml-3 font-medium text-gray-700">${percentage}%</span>
+                            <span class="ml-3 font-medium text-gray-700">${percentage.toFixed(0)}%</span>
                         </div>
                     </td>
                 </tr>
             `;
             tableBody.innerHTML += row;
         });
+
+        // Update Chart (Doughnut)
+        myMonitoringChart.data.labels = [
+            `Lengkap (${completeCount} guru)`,
+            `Belum Lengkap (${incompleteCount} guru)`
+        ];
+        myMonitoringChart.data.datasets[0].data = [completeCount, incompleteCount];
+        myMonitoringChart.update();
     }
 
+    // Fungsi untuk mengambil data awal dari Spreadsheet
     async function fetchInitialData() {
-        const palette = generateColorPalette(teachersData.length);
-        
-        // Initialize chartData with all teachers first
-        teachersData.forEach((teacher, index) => {
-            chartData[teacher.name] = { 
-                submitted: 0, 
-                total: documents.length, 
-                percentage: 0, 
-                color: palette[index] 
-            };
+        // 1. Inisialisasi allTeacherData dengan semua guru (data kosong)
+        teachersData.forEach(teacher => {
+            allTeacherData[teacher.name] = { 'Nama Guru': teacher.name, 'NIP': teacher.nip };
+            DOC_NAMES.forEach(docName => {
+                allTeacherData[teacher.name][docName] = ""; // Set semua dokumen kosong dulu
+            });
         });
 
         try {
@@ -272,38 +300,30 @@
             const data = await response.json();
             
             if (Array.isArray(data)) {
+                // 2. Timpa data guru yang sudah ada di spreadsheet
                 data.forEach(row => {
                     const teacherName = row['Nama Guru'];
-                    if (chartData[teacherName]) {
-                        let submittedCount = 0;
-                        documents.forEach(docName => {
-                            if (row[docName] && String(row[docName]).trim() !== '') {
-                                submittedCount++;
-                            }
-                        });
-                        chartData[teacherName].submitted = submittedCount;
-                        chartData[teacherName].percentage = (submittedCount / documents.length) * 100;
+                    if (allTeacherData[teacherName]) { // Pastikan guru ada di daftar
+                        allTeacherData[teacherName] = row; // Timpa dengan data dari sheet
                     }
                 });
             } else {
-                // Handle cases where data is not an array, e.g., an error object from the script
-                console.warn("Menerima data yang bukan array:", data);
                 if (data && data.message) {
-                    // Log a warning instead of throwing an error to prevent red console errors on empty sheets.
                     console.warn("Pesan dari Google Script (kemungkinan sheet kosong):", data.message);
                 }
             }
             
+            // 3. Update dashboard (chart dan tabel) dengan data yang sudah digabung
             updateDashboard();
 
         } catch (error) {
             console.error('Error fetching initial data:', error);
             showNotification('Gagal memuat data awal dari Spreadsheet.', true);
-            updateDashboard(); // Show empty dashboard on error
+            updateDashboard(); // Tetap panggil untuk render tabel kosong jika error
         }
     }
 
-
+    // --- INISIALISASI HALAMAN ---
     document.addEventListener('DOMContentLoaded', () => {
         const teacherSelect = document.getElementById('teacherName');
         const nipInput = document.getElementById('teacherNip');
@@ -313,6 +333,7 @@
         const buttonText = document.getElementById('buttonText');
         const buttonSpinner = document.getElementById('buttonSpinner');
 
+        // Isi dropdown nama guru
         teachersData.forEach(teacher => {
             const option = document.createElement('option');
             option.value = teacher.name;
@@ -320,7 +341,8 @@
             teacherSelect.appendChild(option);
         });
 
-        documents.forEach(doc => {
+        // Buat input field untuk setiap dokumen
+        DOC_NAMES.forEach(doc => {
             const div = document.createElement('div');
             const label = document.createElement('label');
             label.htmlFor = `link_${doc.replace(/[\s/]/g, '')}`;
@@ -339,11 +361,28 @@
             linksContainer.appendChild(div);
         });
 
+        // Event listener untuk dropdown guru
         teacherSelect.addEventListener('change', () => {
-            const selectedTeacher = teachersData.find(t => t.name === teacherSelect.value);
-            nipInput.value = selectedTeacher ? selectedTeacher.nip : '';
+            const selectedTeacherName = teacherSelect.value;
+            const teacher = allTeacherData[selectedTeacherName];
+            
+            if (teacher) {
+                nipInput.value = teacher['NIP'] || (teachersData.find(t => t.name === selectedTeacherName)?.nip || '');
+                // Isi form input link dengan data yang sudah ada
+                DOC_NAMES.forEach(docName => {
+                    const inputField = document.getElementById(`link_${docName.replace(/[\s/]/g, '')}`);
+                    if (inputField) {
+                        inputField.value = teacher[docName] || '';
+                    }
+                });
+            } else {
+                nipInput.value = '';
+                form.reset(); // Reset link jika tidak ada guru terpilih
+                teacherSelect.value = '';
+            }
         });
 
+        // Event listener untuk submit form
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
@@ -364,20 +403,14 @@
                 links: {}
             };
             
-            let submittedCount = 0;
-            documents.forEach(doc => {
+            DOC_NAMES.forEach(doc => {
                 const linkValue = formData.get(doc);
                 data.links[doc] = linkValue;
-                if(linkValue && linkValue.trim() !== '') {
-                    submittedCount++;
-                }
             });
 
             try {
                 const response = await fetch(SPREADSHEET_URL, {
                     method: 'POST',
-                    mode: 'cors',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
 
@@ -386,12 +419,19 @@
                 const result = await response.json();
                 if (result.result === 'success') {
                     showNotification('Data berhasil disimpan!');
+                    
+                    // Update data lokal setelah sukses
+                    DOC_NAMES.forEach(docName => {
+                        allTeacherData[teacherName][docName] = data.links[docName];
+                    });
+                    
+                    // Update dashboard
+                    updateDashboard();
+                    
+                    // Reset form
                     form.reset();
                     nipInput.value = '';
-                    
-                    chartData[data.teacherName].submitted = submittedCount;
-                    chartData[data.teacherName].percentage = (submittedCount / documents.length) * 100;
-                    updateDashboard();
+                    teacherSelect.value = '';
 
                 } else {
                     throw new Error(result.message || 'Gagal menyimpan data.');
@@ -406,63 +446,48 @@
             }
         });
 
-        const ctx = document.getElementById('submissionChart').getContext('2d');
-        submissionChart = new Chart(ctx, {
-            type: 'bar',
+        // Inisialisasi Chart (Doughnut)
+        const ctx = document.getElementById('monitoringChart').getContext('2d');
+        myMonitoringChart = new Chart(ctx, {
+            type: 'doughnut', // Tipe chart diubah ke doughnut
             data: {
-                labels: [],
+                labels: ['Lengkap', 'Belum Lengkap'],
                 datasets: [{
-                    label: '% Kelengkapan Dokumen',
-                    data: [],
-                    backgroundColor: [],
-                    borderColor: [],
-                    borderWidth: 1.5,
-                    borderRadius: 8,
-                    borderSkipped: false,
+                    data: [0, teachersData.length], // Mulai dari 0 lengkap
+                    backgroundColor: [
+                        'rgba(75, 192, 192, 0.8)', // Hijau
+                        'rgba(255, 99, 132, 0.8)'  // Merah
+                    ],
+                    borderColor: [
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(255, 99, 132, 1)'
+                    ],
+                    borderWidth: 1
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 100,
-                        grid: { color: '#e5e7eb' },
-                        ticks: {
-                            color: '#4b5563',
-                            font: { weight: '500' },
-                            callback: function(value) { return value + "%" }
-                        }
-                    },
-                    x: {
-                         grid: { display: false },
-                         ticks: {
-                            color: '#4b5563',
-                            font: { weight: '500' },
-                            maxRotation: 70,
-                            minRotation: 70,
-                            autoSkip: false,
-                         }
-                    }
-                },
                 plugins: {
                     legend: {
-                        display: false
+                        position: 'bottom', // Pindah legenda ke bawah
+                        labels: {
+                            color: '#333',
+                            font: { size: 14 }
+                        }
                     },
                     tooltip: {
-                         backgroundColor: '#111827',
-                         titleFont: { size: 14, weight: 'bold' },
-                         bodyFont: { size: 12 },
-                         padding: 12,
-                         cornerRadius: 8,
-                         displayColors: false,
                          callbacks: {
                             label: function(context) {
-                                let label = context.dataset.label || '';
-                                if (label) { label += ': '; }
-                                if (context.parsed.y !== null) {
-                                    label += context.parsed.y.toFixed(0) + '%';
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed !== null) {
+                                    // Tampilkan persentase dari total guru
+                                    const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                    const percentage = (total > 0) ? (context.parsed / total) * 100 : 0;
+                                    label += `${percentage.toFixed(1)}%`;
                                 }
                                 return label;
                             }
@@ -472,9 +497,9 @@
             }
         });
 
+        // Ambil data dari spreadsheet saat halaman dimuat
         fetchInitialData();
     });
 </script>
 </body>
 </html>
-
