@@ -265,12 +265,6 @@
             };
         });
 
-        if (SPREADSHEET_URL === 'https://script.google.com/macros/s/AKfycbxdb8Sb4ZjNzs9Y8BnhPCUQUhUANVd0aDPCmNdc708BOJI8UmAID7eqltE9jDP_pWJf/exec') {
-             console.warn("URL Google Apps Script belum diatur. Menampilkan data dummy.");
-             updateDashboard();
-             return;
-        }
-
         try {
             const response = await fetch(SPREADSHEET_URL + '?action=read');
             if (!response.ok) throw new Error('Gagal mengambil data dari spreadsheet.');
@@ -352,11 +346,6 @@
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-
-            if (SPREADSHEET_URL === 'https://script.google.com/macros/s/AKfycbxdb8Sb4ZjNzs9Y8BnhPCUQUhUANVd0aDPCmNdc708BOJI8UmAID7eqltE9jDP_pWJf/exec') {
-                showNotification('Harap konfigurasi URL Google Apps Script terlebih dahulu.', true);
-                return;
-            }
 
             const teacherName = teacherSelect.value;
             if (!teacherName) {
